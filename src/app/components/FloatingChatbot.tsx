@@ -4,13 +4,7 @@ import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
 import { Bot, X, Send, Minimize2, Maximize2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-}
+import { useChatbot } from "../../hooks/useChatbot";
 
 const quickReplies = [
   "Track shipment",
@@ -19,20 +13,22 @@ const quickReplies = [
   "Route suggestions",
 ];
 
+const INITIAL_MESSAGE = {
+  id: "init-1",
+  role: "assistant" as const,
+  content: "Hi! I'm your AI assistant. Ask me about shipments, routes, or delays.",
+  timestamp: new Date(),
+};
+
 export default function FloatingChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      role: "assistant",
-      content: "Hi! I'm your AI assistant. Ask me about shipments, routes, or delays.",
-      timestamp: new Date(),
-    },
-  ]);
   const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const { messages, isLoading, sendMessage } = useChatbot({
+    initialMessages: [INITIAL_MESSAGE],
+  });
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -40,49 +36,11 @@ export default function FloatingChatbot() {
     }
   }, [messages]);
 
-  const generateQuickResponse = (userMessage: string): string => {
-    const lower = userMessage.toLowerCase();
-
-    if (lower.includes("track")) {
-      return "I can help you track shipments. You have 1,284 active shipments. Would you like to see high-priority ones?";
-    }
-    if (lower.includes("delay")) {
-      return "Currently 3 routes have delays: Northeast snowstorm (6-8h), I-95 construction (4h), and SF fog (1-2h). Need details?";
-    }
-    if (lower.includes("cost")) {
-      return "Cost savings this month: $24,500. I found opportunities in Chicago-Denver corridor ($1,200/week) and carrier consolidation (18% reduction).";
-    }
-    if (lower.includes("route")) {
-      return "I recommend the AI-optimized route for LA-NYC: 2,789 mi, $3,590 cost, saving $850 vs standard route. Apply it?";
-    }
-
-    return "I can help with shipment tracking, route optimization, delay alerts, and cost analysis. What do you need?";
-  };
-
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: input,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    const text = input;
     setInput("");
-    setIsTyping(true);
-
-    setTimeout(() => {
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: generateQuickResponse(input),
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-      setIsTyping(false);
-    }, 800);
+    await sendMessage(text);
   };
 
   const handleQuickReply = (reply: string) => {
@@ -169,7 +127,7 @@ export default function FloatingChatbot() {
                   </div>
                 </motion.div>
               ))}
-              {isTyping && (
+              {isLoading && (
                 <div className="flex gap-2 justify-start">
                   <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
                     <Bot className="w-4 h-4 text-indigo-600" />
@@ -203,10 +161,11 @@ export default function FloatingChatbot() {
                 placeholder="Type your message..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSend()}
+                onKeyDown={(e) => e.key === "Enter" && !isLoading && handleSend()}
                 className="text-sm"
+                disabled={isLoading}
               />
-              <Button onClick={handleSend} size="icon" disabled={!input.trim()}>
+              <Button onClick={handleSend} size="icon" disabled={!input.trim() || isLoading}>
                 <Send className="w-4 h-4" />
               </Button>
             </div>

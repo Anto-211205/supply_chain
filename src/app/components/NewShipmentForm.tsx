@@ -6,11 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Textarea } from "./ui/textarea";
 import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { ArrowLeft, CalendarIcon, CheckCircle2, Package } from "lucide-react";
+import { ArrowLeft, CalendarIcon, CheckCircle2, Package, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { toast } from "sonner";
 import { motion } from "motion/react";
+import { shipmentAPI, APIError } from "../../lib/api";
 
 interface NewShipmentFormProps {
   onBack?: () => void;
@@ -58,7 +59,7 @@ export default function NewShipmentForm({ onBack, onSuccess }: NewShipmentFormPr
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -70,9 +71,8 @@ export default function NewShipmentForm({ onBack, onSuccess }: NewShipmentFormPr
 
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const response = await shipmentAPI.create(formData);
       setIsSuccess(true);
       toast.success("Shipment created successfully!", {
         description: "AI route optimization has started."
@@ -80,11 +80,23 @@ export default function NewShipmentForm({ onBack, onSuccess }: NewShipmentFormPr
       
       // Auto transition after success
       setTimeout(() => {
-        if (onSuccess) {
-          onSuccess(`SHP-${Math.floor(10000 + Math.random() * 90000)}`);
+        if (onSuccess && response.shipment_id) {
+          onSuccess(response.shipment_id);
         }
       }, 1500);
-    }, 1500);
+    } catch (err) {
+      if (err instanceof APIError) {
+        toast.error("Failed to create shipment", {
+          description: err.message
+        });
+      } else {
+        toast.error("Failed to create shipment", {
+          description: "Please try again."
+        });
+      }
+      console.error('Shipment creation error:', err);
+      setIsSubmitting(false);
+    }
   };
 
   return (

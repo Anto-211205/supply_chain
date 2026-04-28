@@ -1,6 +1,25 @@
 __pycache__/
 *.pyc
+*.pyo
+
+# Environment files — never commit secrets
 .env
+backend/.env
+*.env
+.env.local
+.env.*.local
+
+# Frontend build output
+dist/
+dist-ssr/
+
+# Editor directories
 .vscode/
 .idea/
-node_modules
+
+# Dependencies
+node_modules/
+
+# Python cache
+*.egg-info/
+.pytest_cache/

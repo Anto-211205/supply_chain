@@ -1,33 +1,85 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { TrendingUp, TrendingDown, Package, Clock, DollarSign, AlertTriangle } from "lucide-react";
+import { TrendingUp, TrendingDown, Package, Clock, DollarSign, AlertTriangle, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
-
-const deliveryData = [
-  { month: "Jan", onTime: 850, delayed: 120, predicted: 920 },
-  { month: "Feb", onTime: 920, delayed: 90, predicted: 980 },
-  { month: "Mar", onTime: 880, delayed: 110, predicted: 950 },
-  { month: "Apr", onTime: 950, delayed: 75, predicted: 1000 },
-  { month: "May", onTime: 990, delayed: 60, predicted: 1050 },
-  { month: "Jun", onTime: 1020, delayed: 50, predicted: 1080 },
-];
-
-const costData = [
-  { week: "Week 1", actual: 45000, optimized: 38000 },
-  { week: "Week 2", actual: 48000, optimized: 40000 },
-  { week: "Week 3", actual: 46000, optimized: 39000 },
-  { week: "Week 4", actual: 50000, optimized: 42000 },
-];
-
-const riskDistribution = [
-  { name: "Weather", value: 35, color: "#3b82f6" },
-  { name: "Traffic", value: 25, color: "#10b981" },
-  { name: "Geopolitical", value: 20, color: "#f59e0b" },
-  { name: "Strikes", value: 15, color: "#ef4444" },
-  { name: "Other", value: 5, color: "#6b7280" },
-];
+import { useEffect, useState } from "react";
+import { dashboardAPI, DashboardSummary, APIError } from "../../lib/api";
 
 export default function Dashboard() {
+  const [data, setData] = useState<DashboardSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const summary = await dashboardAPI.getSummary();
+        setData(summary);
+      } catch (err) {
+        if (err instanceof APIError) {
+          setError(`Failed to load dashboard: ${err.message}`);
+        } else {
+          setError('Failed to load dashboard data');
+        }
+        console.error('Dashboard error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const defaultDeliveryData = [
+    { month: "Jan", onTime: 850, delayed: 120, predicted: 920 },
+    { month: "Feb", onTime: 920, delayed: 90, predicted: 980 },
+    { month: "Mar", onTime: 880, delayed: 110, predicted: 950 },
+    { month: "Apr", onTime: 950, delayed: 75, predicted: 1000 },
+    { month: "May", onTime: 990, delayed: 60, predicted: 1050 },
+    { month: "Jun", onTime: 1020, delayed: 50, predicted: 1080 },
+  ];
+
+  const defaultCostData = [
+    { week: "Week 1", actual: 45000, optimized: 38000 },
+    { week: "Week 2", actual: 48000, optimized: 40000 },
+    { week: "Week 3", actual: 46000, optimized: 39000 },
+    { week: "Week 4", actual: 50000, optimized: 42000 },
+  ];
+
+  const defaultRiskDistribution = [
+    { name: "Weather", value: 35, color: "#3b82f6" },
+    { name: "Traffic", value: 25, color: "#10b981" },
+    { name: "Geopolitical", value: 20, color: "#f59e0b" },
+    { name: "Strikes", value: 15, color: "#ef4444" },
+    { name: "Other", value: 5, color: "#6b7280" },
+  ];
+
+  const deliveryData = data?.deliveryData || defaultDeliveryData;
+  const costData = data?.costData || defaultCostData;
+  const riskDistribution = data?.riskDistribution || defaultRiskDistribution;
+
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -47,7 +99,7 @@ export default function Dashboard() {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
           <CardContent>
-            <div className="text-2xl">1,284</div>
+            <div className="text-2xl">{data?.activeShipments || 1284}</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <TrendingUp className="h-3 w-3 text-green-600" />
               <span className="text-green-600">+12.5%</span> from last month
@@ -67,7 +119,7 @@ export default function Dashboard() {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
           <CardContent>
-            <div className="text-2xl">95.3%</div>
+            <div className="text-2xl">{(data?.onTimeDeliveryRate || 95.3).toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <TrendingUp className="h-3 w-3 text-green-600" />
               <span className="text-green-600">+2.1%</span> from last month
@@ -87,7 +139,7 @@ export default function Dashboard() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
           <CardContent>
-            <div className="text-2xl">$24,500</div>
+            <div className="text-2xl">${(data?.costSavings || 24500).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <TrendingDown className="h-3 w-3 text-green-600" />
               <span className="text-green-600">-8.2%</span> cost reduction
@@ -107,7 +159,7 @@ export default function Dashboard() {
               <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
           <CardContent>
-            <div className="text-2xl">7</div>
+            <div className="text-2xl">{data?.activeAlerts || 7}</div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <span className="text-orange-600">3 high priority</span>
             </p>

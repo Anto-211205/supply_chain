@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import { MapPin, Navigation, Clock, DollarSign, TrendingDown } from "lucide-react";
+import { MapPin, Navigation, Clock, DollarSign, TrendingDown, Loader2 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { routeAPI, APIError } from "../../lib/api";
 
 // Fix for default marker icons in react-leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -98,6 +99,32 @@ function MapUpdater({ coordinates }: { coordinates: { lat: number; lng: number }
 
 export default function RouteOptimization() {
   const [selectedRoute, setSelectedRoute] = useState<Route>(mockRoutes[0]);
+  const [isApplying, setIsApplying] = useState(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
+  const [applySuccess, setApplySuccess] = useState(false);
+
+  const handleApplyRoute = async () => {
+    setIsApplying(true);
+    setApplyError(null);
+    setApplySuccess(false);
+    try {
+      await routeAPI.optimize(
+        selectedRoute.origin,
+        selectedRoute.destination
+      );
+      setApplySuccess(true);
+      setTimeout(() => setApplySuccess(false), 4000);
+    } catch (err) {
+      const msg =
+        err instanceof APIError
+          ? err.message
+          : "Failed to apply route. Please try again.";
+      setApplyError(msg);
+      console.error("[RouteOptimization] optimize error:", err);
+    } finally {
+      setIsApplying(false);
+    }
+  };
 
   const getRouteColor = (status: Route["status"]) => {
     switch (status) {
@@ -268,7 +295,30 @@ export default function RouteOptimization() {
                   </div>
                 ))}
               </div>
-              <Button className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700" size="lg">Apply Selected Route</Button>
+              {applyError && (
+                <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-sm text-red-800">{applyError}</p>
+                </div>
+              )}
+              {applySuccess && (
+                <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="text-sm text-green-800">Route optimization applied successfully!</p>
+                </div>
+              )}
+              <Button
+                className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700"
+                size="lg"
+                onClick={handleApplyRoute}
+                disabled={isApplying}
+              >
+                {isApplying ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Applying...</>
+                ) : applySuccess ? (
+                  "✓ Route Applied"
+                ) : (
+                  "Apply Selected Route"
+                )}
+              </Button>
             </CardContent>
           </Card>
 

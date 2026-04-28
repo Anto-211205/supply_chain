@@ -5,7 +5,8 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { BarChart3, ArrowLeft, Mail, Lock, User, Building, Phone, MapPin } from "lucide-react";
+import { BarChart3, ArrowLeft, Mail, Lock, User, Building, Phone, MapPin, Loader2 } from "lucide-react";
+import { authAPI, APIError } from "../../lib/api";
 
 interface RegisterPageProps {
   onRegister: () => void;
@@ -25,20 +26,50 @@ export default function RegisterPage({ onRegister, onBackToLanding, onGoToSignIn
     country: "",
     role: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
+      setError("Passwords don't match!");
       return;
     }
-    if (formData.email && formData.password && formData.firstName && formData.lastName) {
-      onRegister();
+    
+    if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
+      setError("Please fill in all required fields");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await authAPI.register(formData);
+      if (response.status === "success") {
+        if (response.token) {
+          localStorage.setItem("auth_token", response.token);
+        }
+        onRegister();
+      } else {
+        setError(response.message || "Registration failed");
+      }
+    } catch (err) {
+      if (err instanceof APIError) {
+        setError(`Registration failed: ${err.message}`);
+      } else {
+        setError("Registration failed. Please try again.");
+      }
+      console.error('Registration error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    setError(null);
   };
 
   return (
@@ -73,6 +104,11 @@ export default function RegisterPage({ onRegister, onBackToLanding, onGoToSignIn
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <h3 className="text-lg mb-3">Personal Information</h3>
@@ -88,6 +124,7 @@ export default function RegisterPage({ onRegister, onBackToLanding, onGoToSignIn
                         onChange={(e) => updateField("firstName", e.target.value)}
                         className="pl-10"
                         required
+                        disabled={loading}
                       />
                     </div>
                   </div>
@@ -103,6 +140,7 @@ export default function RegisterPage({ onRegister, onBackToLanding, onGoToSignIn
                         onChange={(e) => updateField("lastName", e.target.value)}
                         className="pl-10"
                         required
+                        disabled={loading}
                       />
                     </div>
                   </div>
@@ -121,6 +159,7 @@ export default function RegisterPage({ onRegister, onBackToLanding, onGoToSignIn
                         onChange={(e) => updateField("email", e.target.value)}
                         className="pl-10"
                         required
+                        disabled={loading}
                       />
                     </div>
                   </div>
@@ -136,6 +175,7 @@ export default function RegisterPage({ onRegister, onBackToLanding, onGoToSignIn
                         value={formData.phone}
                         onChange={(e) => updateField("phone", e.target.value)}
                         className="pl-10"
+                        disabled={loading}
                       />
                     </div>
                   </div>
@@ -245,8 +285,15 @@ export default function RegisterPage({ onRegister, onBackToLanding, onGoToSignIn
                 </p>
               </div>
 
-              <Button type="submit" className="w-full" size="lg">
-                Create Account
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Creating Account...
+                  </>
+                ) : (
+                  "Create Account"
+                )}
               </Button>
             </form>
 

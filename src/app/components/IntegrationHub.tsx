@@ -4,7 +4,9 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Badge } from "./ui/badge";
 import { Switch } from "./ui/switch";
-import { CheckCircle2, XCircle, RefreshCw, Settings, Plug, Code } from "lucide-react";
+import { CheckCircle2, XCircle, RefreshCw, Settings, Plug, Code, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { shipAPI } from "../../lib/api";
 
 interface Integration {
   id: string;
@@ -92,6 +94,26 @@ const integrations: Integration[] = [
 ];
 
 export default function IntegrationHub() {
+  const [signalCount, setSignalCount] = useState<number | null>(null);
+  const [signalLoading, setSignalLoading] = useState(true);
+  const [signalError, setSignalError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSignals = async () => {
+      try {
+        const data = await shipAPI.getAllSignals();
+        // data is an array of ship signal objects
+        const count = Array.isArray(data) ? data.length : 0;
+        setSignalCount(count);
+      } catch (err) {
+        console.error("[IntegrationHub] fetchSignals error:", err);
+        setSignalError("Unable to load live signal data.");
+      } finally {
+        setSignalLoading(false);
+      }
+    };
+    fetchSignals();
+  }, []);
   const getStatusIcon = (status: Integration["status"]) => {
     switch (status) {
       case "connected":
@@ -154,7 +176,13 @@ export default function IntegrationHub() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">API Calls Today</p>
-                <p className="text-3xl mt-1">24.5K</p>
+                {signalLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-gray-400 mt-1" />
+                ) : signalError ? (
+                  <p className="text-3xl mt-1 text-gray-400">--</p>
+                ) : (
+                  <p className="text-3xl mt-1">{signalCount !== null ? `${signalCount} signals` : "--"}</p>
+                )}
               </div>
               <Code className="w-10 h-10 text-blue-600" />
             </div>

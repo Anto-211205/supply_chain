@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: supply-chain-api
+    env: python
+    # Root directory must be the project root (not backend/) so Python can
+    # resolve "from backend.routes.*" imports used throughout the codebase.
+    rootDir: .
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false

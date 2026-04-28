@@ -7,6 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, Save } from "lucide-react";
 import { motion } from "motion/react";
+import { profileAPI, APIError } from "../../lib/api";
 
 export default function FormsPage() {
   const [formData, setFormData] = useState({
@@ -45,7 +46,9 @@ export default function FormsPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -56,15 +59,15 @@ export default function FormsPage() {
     }
 
     setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+    setSubmitError(null);
+
+    try {
+      await profileAPI.updateProfile(formData);
       setIsSuccess(true);
       toast.success("Profile updated successfully!", {
         description: "Your changes have been saved."
       });
-      
+
       setTimeout(() => {
         setIsSuccess(false);
         setFormData({
@@ -76,7 +79,17 @@ export default function FormsPage() {
           notes: ""
         });
       }, 3000);
-    }, 1500);
+    } catch (err) {
+      const msg =
+        err instanceof APIError
+          ? err.message
+          : "Failed to save profile. Please try again.";
+      setSubmitError(msg);
+      toast.error("Failed to save profile", { description: msg });
+      console.error("[FormsPage] updateProfile error:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -85,6 +98,12 @@ export default function FormsPage() {
         <h1 className="text-3xl font-semibold mb-2">Company Profile Settings</h1>
         <p className="text-gray-600">Update your organization details and preferences.</p>
       </div>
+
+      {submitError && (
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
+          <p className="text-sm text-red-800">{submitError}</p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="relative">
         {isSuccess && (

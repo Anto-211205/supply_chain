@@ -3,113 +3,94 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Badge } from "./ui/badge";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { Search, MapPin, Package, Clock, AlertCircle } from "lucide-react";
-import { useState } from "react";
+import { Search, MapPin, Package, Clock, AlertCircle, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { shipmentAPI, Shipment, APIError } from "../../lib/api";
 
-interface Shipment {
-  id: string;
-  origin: string;
-  destination: string;
-  status: "on-time" | "delayed" | "in-transit" | "delivered";
-  currentLocation: string;
-  eta: string;
-  progress: number;
-  carrier: string;
-  delayRisk: "low" | "medium" | "high";
-}
-
-const mockShipments: Shipment[] = [
-  {
-    id: "SH-2026-001",
-    origin: "Los Angeles, CA",
-    destination: "New York, NY",
-    status: "in-transit",
-    currentLocation: "Kansas City, MO",
-    eta: "Apr 25, 2026 3:00 PM",
-    progress: 65,
-    carrier: "FastFreight Express",
-    delayRisk: "low"
-  },
-  {
-    id: "SH-2026-002",
-    origin: "Chicago, IL",
-    destination: "Miami, FL",
-    status: "delayed",
-    currentLocation: "Atlanta, GA",
-    eta: "Apr 24, 2026 11:30 AM",
-    progress: 80,
-    carrier: "QuickShip Logistics",
-    delayRisk: "high"
-  },
-  {
-    id: "SH-2026-003",
-    origin: "Seattle, WA",
-    destination: "Boston, MA",
-    status: "on-time",
-    currentLocation: "Minneapolis, MN",
-    eta: "Apr 26, 2026 9:00 AM",
-    progress: 55,
-    carrier: "Reliable Transport Co",
-    delayRisk: "low"
-  },
-  {
-    id: "SH-2026-004",
-    origin: "Houston, TX",
-    destination: "Denver, CO",
-    status: "in-transit",
-    currentLocation: "Amarillo, TX",
-    eta: "Apr 24, 2026 6:00 PM",
-    progress: 45,
-    carrier: "FastFreight Express",
-    delayRisk: "medium"
-  },
-  {
-    id: "SH-2026-005",
-    origin: "Phoenix, AZ",
-    destination: "Portland, OR",
-    status: "delivered",
-    currentLocation: "Portland, OR",
-    eta: "Apr 23, 2026 2:00 PM",
-    progress: 100,
-    carrier: "Pacific Carriers",
-    delayRisk: "low"
-  }
-];
-
-const getStatusColor = (status: Shipment["status"]) => {
-  switch (status) {
-    case "delivered":
-      return "bg-green-600";
-    case "on-time":
-      return "bg-blue-600";
-    case "in-transit":
-      return "bg-indigo-600";
-    case "delayed":
-      return "bg-red-600";
-  }
-};
-
-const getRiskColor = (risk: Shipment["delayRisk"]) => {
-  switch (risk) {
-    case "low":
-      return "text-green-600 bg-green-50";
-    case "medium":
-      return "text-yellow-600 bg-yellow-50";
-    case "high":
-      return "text-red-600 bg-red-50";
-  }
-};
+interface ShipmentUI extends Shipment {}
 
 export default function ShipmentTracking() {
+  const [shipments, setShipments] = useState<ShipmentUI[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(mockShipments[0]);
+  const [selectedShipment, setSelectedShipment] = useState<ShipmentUI | null>(null);
 
-  const filteredShipments = mockShipments.filter(
+  useEffect(() => {
+    const fetchShipments = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await shipmentAPI.getAll();
+        setShipments(data);
+        if (data.length > 0) {
+          setSelectedShipment(data[0]);
+        }
+      } catch (err) {
+        if (err instanceof APIError) {
+          setError(`Failed to load shipments: ${err.message}`);
+        } else {
+          setError('Failed to load shipments');
+        }
+        console.error('Shipment error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchShipments();
+  }, []);
+
+  const filteredShipments = shipments.filter(
     (s) =>
       s.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.origin.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.destination.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const getStatusColor = (status: Shipment["status"]) => {
+    switch (status) {
+      case "delivered":
+        return "bg-green-600";
+      case "on-time":
+        return "bg-blue-600";
+      case "in-transit":
+        return "bg-indigo-600";
+      case "delayed":
+        return "bg-red-600";
+    }
+  };
+
+  const getRiskColor = (risk: Shipment["delayRisk"]) => {
+    switch (risk) {
+      case "low":
+        return "text-green-600 bg-green-50";
+      case "medium":
+        return "text-yellow-600 bg-yellow-50";
+      case "high":
+        return "text-red-600 bg-red-50";
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">

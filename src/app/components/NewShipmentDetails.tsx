@@ -1,10 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
-import { ArrowLeft, CheckCircle2, Circle, Clock, MapPin, Send } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Circle, Clock, MapPin, Send, Loader2 } from "lucide-react";
 import NewShipmentMap from "./NewShipmentMap";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "./ui/badge";
+import { shipAPI } from "../../lib/api";
 
 interface TimelineEvent {
   id: string;
@@ -87,11 +88,49 @@ export default function NewShipmentDetails({ id, onBack }: NewShipmentDetailsPro
     }
   ];
 
-  const mapMarkers = [
-    { id: "m1", position: [34.0522, -118.2437] as [number, number], title: "Origin", facility: "LA Dist Center", isOrigin: true },
-    { id: "m2", position: [39.7392, -104.9903] as [number, number], title: "Current Location", facility: "Denver Checkpoint", status: "In Transit" },
-    { id: "m3", position: [40.7128, -74.0060] as [number, number], title: "Destination", facility: "NY Metro Hub", isDestination: true },
+  // Static route markers (origin + destination always shown)
+  const staticMarkers: { id: string; position: [number, number]; title: string; facility: string; status?: string; isOrigin?: boolean; isDestination?: boolean }[] = [
+    { id: "m1", position: [34.0522, -118.2437], title: "Origin", facility: "LA Dist Center", isOrigin: true },
+    { id: "m3", position: [40.7128, -74.0060], title: "Destination", facility: "NY Metro Hub", isDestination: true },
   ];
+
+  // Live ship positions fetched from backend
+  const [liveMarkers, setLiveMarkers] = useState<typeof staticMarkers>([]);
+  const [mapLoading, setMapLoading] = useState(true);
+  const [mapError, setMapError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchLiveShips = async () => {
+      try {
+        const ships = await shipAPI.getLive();
+        const markers = ships.map((ship, idx) => ({
+          id: `live-${ship.id ?? idx}`,
+          position: ship.coordinates as [number, number],
+          title: ship.name ?? `Ship ${idx + 1}`,
+          facility: ship.location ?? "At sea",
+          status: ship.status,
+        }));
+        setLiveMarkers(markers);
+      } catch (err) {
+        console.error("[NewShipmentDetails] fetchLiveShips error:", err);
+        setMapError("Live ship data unavailable — showing route only.");
+      } finally {
+        setMapLoading(false);
+      }
+    };
+    fetchLiveShips();
+  }, [id]);  // re-fetch if navigating between shipments
+
+  const allMapMarkers = [...staticMarkers, ...liveMarkers];
+  // Legacy current-location marker (Denver checkpoint)
+  const currentLocationMarker = {
+    id: "m2",
+    position: [39.7392, -104.9903] as [number, number],
+    title: "Current Location",
+    facility: "Denver Checkpoint",
+    status: "In Transit",
+  };
+  const mapMarkers = [...allMapMarkers, currentLocationMarker];
 
   const handleAddNote = () => {
     if (!newNote.trim()) return;
@@ -127,7 +166,18 @@ export default function NewShipmentDetails({ id, onBack }: NewShipmentDetailsPro
               <CardTitle>Live Route Tracking</CardTitle>
             </CardHeader>
             <CardContent>
-              <NewShipmentMap markers={mapMarkers} center={[39.0, -98.0]} zoom={4} className="h-[400px] w-full rounded-lg border" />
+              {mapLoading ? (
+                <div className="h-[400px] flex items-center justify-center bg-gray-50 rounded-lg border">
+                  <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+                </div>
+              ) : (
+                <>
+                  {mapError && (
+                    <p className="text-xs text-amber-600 mb-2">{mapError}</p>
+                  )}
+                  <NewShipmentMap markers={mapMarkers} center={[39.0, -98.0]} zoom={4} className="h-[400px] w-full rounded-lg border" />
+                </>
+              )}
             </CardContent>
           </Card>
 

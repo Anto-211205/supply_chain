@@ -4,7 +4,8 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { BarChart3, ArrowLeft, Mail, Lock } from "lucide-react";
+import { BarChart3, ArrowLeft, Mail, Lock, Loader2 } from "lucide-react";
+import { authAPI, APIError } from "../../lib/api";
 
 interface SignInPageProps {
   onSignIn: () => void;
@@ -15,11 +16,39 @@ interface SignInPageProps {
 export default function SignInPage({ onSignIn, onBackToLanding, onGoToRegister }: SignInPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && password) {
-      onSignIn();
+    if (!email || !password) {
+      setError("Please enter email and password");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await authAPI.login(email, password);
+      if (response.status === "success") {
+        // Store token if returned
+        if (response.token) {
+          localStorage.setItem("auth_token", response.token);
+        }
+        onSignIn();
+      } else {
+        setError(response.message || "Login failed");
+      }
+    } catch (err) {
+      if (err instanceof APIError) {
+        setError(`Login failed: ${err.message}`);
+      } else {
+        setError("Login failed. Please try again.");
+      }
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -55,6 +84,11 @@ export default function SignInPage({ onSignIn, onBackToLanding, onGoToRegister }
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
@@ -68,6 +102,7 @@ export default function SignInPage({ onSignIn, onBackToLanding, onGoToRegister }
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -84,13 +119,14 @@ export default function SignInPage({ onSignIn, onBackToLanding, onGoToRegister }
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10"
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
 
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" className="rounded" />
+                  <input type="checkbox" className="rounded" disabled={loading} />
                   Remember me
                 </label>
                 <Button variant="link" size="sm" className="p-0">
@@ -98,8 +134,15 @@ export default function SignInPage({ onSignIn, onBackToLanding, onGoToRegister }
                 </Button>
               </div>
 
-              <Button type="submit" className="w-full" size="lg">
-                Sign In
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Signing In...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
               </Button>
             </form>
 

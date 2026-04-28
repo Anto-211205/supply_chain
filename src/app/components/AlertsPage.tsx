@@ -1,92 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { AlertTriangle, Cloud, TrendingUp, Users, MapPin, X, Search, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
-import { useState } from "react";
+import { AlertTriangle, Cloud, TrendingUp, Users, MapPin, X, Search, ChevronDown, ChevronUp, AlertCircle, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Input } from "./ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { motion, AnimatePresence } from "motion/react";
-
-interface Alert {
-  id: string;
-  type: "weather" | "traffic" | "geopolitical" | "strike" | "other";
-  severity: "low" | "medium" | "high" | "critical";
-  title: string;
-  description: string;
-  affectedShipments: number;
-  location: string;
-  timestamp: string;
-  recommendation: string;
-}
-
-const mockAlerts: Alert[] = [
-  {
-    id: "ALT-001",
-    type: "weather",
-    severity: "high",
-    title: "Heavy Snowstorm Warning",
-    description: "Major winter storm expected to impact Northeast corridor with 12-18 inches of snow and high winds.",
-    affectedShipments: 23,
-    location: "New York, NY - Boston, MA",
-    timestamp: "2 hours ago",
-    recommendation: "Reroute affected shipments via southern corridor. Expect 6-8 hour delays if maintaining current routes."
-  },
-  {
-    id: "ALT-002",
-    type: "traffic",
-    severity: "medium",
-    title: "Highway Construction Delays",
-    description: "I-95 southbound closed between exits 22-28 for emergency repairs. Expected 4-hour delays.",
-    affectedShipments: 12,
-    location: "Philadelphia, PA",
-    timestamp: "4 hours ago",
-    recommendation: "Use alternate route via I-476 and I-76. Add 45 minutes to estimated delivery time."
-  },
-  {
-    id: "ALT-003",
-    type: "geopolitical",
-    severity: "critical",
-    title: "Port Strike Imminent",
-    description: "Dockworkers union announced potential strike starting April 25. Major West Coast ports may be affected.",
-    affectedShipments: 45,
-    location: "Los Angeles, CA - Long Beach, CA",
-    timestamp: "1 day ago",
-    recommendation: "Expedite inbound shipments. Consider alternative ports in Seattle or Vancouver for new shipments."
-  },
-  {
-    id: "ALT-004",
-    type: "traffic",
-    severity: "low",
-    title: "Increased Traffic Volume",
-    description: "Above-average traffic reported on major highways due to holiday travel.",
-    affectedShipments: 8,
-    location: "Multiple locations",
-    timestamp: "6 hours ago",
-    recommendation: "Add 30-60 minute buffer to delivery estimates. No route changes necessary."
-  },
-  {
-    id: "ALT-005",
-    type: "weather",
-    severity: "medium",
-    title: "Fog Advisory",
-    description: "Dense fog reducing visibility to less than 1/4 mile. Speed restrictions in effect.",
-    affectedShipments: 15,
-    location: "San Francisco, CA - Sacramento, CA",
-    timestamp: "3 hours ago",
-    recommendation: "Drivers should reduce speed and increase following distance. Expected 1-2 hour delays."
-  },
-  {
-    id: "ALT-006",
-    type: "other",
-    severity: "medium",
-    title: "Fuel Price Spike",
-    description: "Diesel prices increased 8% in midwest region due to refinery issues.",
-    affectedShipments: 34,
-    location: "Chicago, IL - St. Louis, MO",
-    timestamp: "12 hours ago",
-    recommendation: "Consider route optimization to minimize fuel consumption. Projected cost increase: $450/shipment."
-  }
-];
+import { alertAPI, Alert, APIError } from "../../lib/api";
 
 const getSeverityColor = (severity: Alert["severity"]) => {
   switch (severity) {
@@ -117,10 +37,34 @@ const getTypeIcon = (type: Alert["type"]) => {
 };
 
 export default function AlertsPage() {
-  const [alerts, setAlerts] = useState<Alert[]>(mockAlerts);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Alert["severity"] | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await alertAPI.getAll();
+        setAlerts(data);
+      } catch (err) {
+        if (err instanceof APIError) {
+          setError(`Failed to load alerts: ${err.message}`);
+        } else {
+          setError('Failed to load alerts');
+        }
+        console.error('Alert error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAlerts();
+  }, []);
 
   const toggleRow = (id: string) => {
     const newExpandedRows = new Set(expandedRows);
@@ -142,6 +86,16 @@ export default function AlertsPage() {
   const criticalCount = alerts.filter((a) => a.severity === "critical").length;
   const highCount = alerts.filter((a) => a.severity === "high").length;
   const activeIncidents = alerts.length;
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
