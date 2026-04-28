@@ -2,6 +2,7 @@ services:
   - type: web
     name: supply-chain-api
     env: python
+    # IMPORTANT: Set Root Directory to 'backend' in the Render dashboard
     rootDir: .
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
@@ -13,5 +14,6 @@ services:
       - key: ALLOWED_ORIGINS
         sync: false
       - key: GEMINI_API_KEY
-        value: AIzaSyA1fePIqAFAbXe13BDZrQcCqcWTj-z5kbE
+        sync: false
+      - key: SECRET_KEY
         sync: false
