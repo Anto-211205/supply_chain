@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from backend.models.alert import AlertResponse
-from backend.services.alert_service import (
+from models.alert import AlertResponse
+from services.alert_service import (
     get_risk_zones,
     get_ship_risk,
     get_all_alerts

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from backend.models.shipment import ShipmentLocationUpdate, CreateShipment
-from backend.services.tracking_service import (
+from models.shipment import ShipmentLocationUpdate, CreateShipment
+from services.tracking_service import (
     get_all_shipments,
     get_shipment,
     update_shipment_location

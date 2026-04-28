@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from backend.services.dashboard_service import get_dashboard_summary
+from services.dashboard_service import get_dashboard_summary
 
 router = APIRouter()
 

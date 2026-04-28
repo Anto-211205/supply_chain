@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from backend.models.signal import SignalResponse
-from backend.services.signal_service import get_ship_signal, get_all_ship_signals
+from models.signal import SignalResponse
+from services.signal_service import get_ship_signal, get_all_ship_signals
 
 router = APIRouter()
 

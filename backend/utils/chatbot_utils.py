@@ -5,12 +5,12 @@ Chatbot NLP utilities — entity extraction, intent classification, and context 
 import re
 from typing import Dict, List, Optional, Set, Tuple
 
-from backend.services.alert_service import get_all_alerts, get_risk_zones, get_ship_risk
-from backend.services.dashboard_service import get_dashboard_summary
-from backend.services.inventory_service import get_inventory, get_low_stock
-from backend.services.ship_service import get_all_live_ships, get_ship, ships
-from backend.services.signal_service import get_all_ship_signals, get_ship_signal
-from backend.services.tracking_service import get_all_shipments, get_shipment, shipments
+from services.alert_service import get_all_alerts, get_risk_zones, get_ship_risk
+from services.dashboard_service import get_dashboard_summary
+from services.inventory_service import get_inventory, get_low_stock
+from services.ship_service import get_all_live_ships, get_ship, ships
+from services.signal_service import get_all_ship_signals, get_ship_signal
+from services.tracking_service import get_all_shipments, get_shipment, shipments
 
 # ============================================================================
 # Constants

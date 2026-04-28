@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from backend.models.ship import CoordinateInput
-from backend.services.ship_service import (
+from models.ship import CoordinateInput
+from services.ship_service import (
     get_all_live_ships,
     get_ship,
     coordinate_to_grid

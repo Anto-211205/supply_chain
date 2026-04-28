@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from backend.models.inventory import DeliveryUpdate
-from backend.services.inventory_service import (
+from models.inventory import DeliveryUpdate
+from services.inventory_service import (
     get_inventory,
     get_low_stock,
     update_after_delivery

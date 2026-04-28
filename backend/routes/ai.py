@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from backend.models.ai import DelayRequest, RouteRequest
-from backend.services.ai_service import predict_delay, optimize_route
+from models.ai import DelayRequest, RouteRequest
+from services.ai_service import predict_delay, optimize_route
 
 router = APIRouter()
 

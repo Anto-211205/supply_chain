@@ -1,6 +1,6 @@
 import uuid
 
-from backend.utils.auth_utils import hash_password, verify_password
+from utils.auth_utils import hash_password, verify_password
 
 
 USERS_DB: dict = {}

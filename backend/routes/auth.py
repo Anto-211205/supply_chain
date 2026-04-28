@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 
-from backend.utils.auth_utils import create_access_token, get_current_user, verify_password
-from backend.utils.mock_db import create_user, get_user_by_email, update_user_password
+from utils.auth_utils import create_access_token, get_current_user, verify_password
+from utils.mock_db import create_user, get_user_by_email, update_user_password
 
 
 router = APIRouter()

@@ -4,8 +4,8 @@ Chatbot API route — thin layer delegating to chatbot_service.
 
 from fastapi import APIRouter
 
-from backend.models.chat import ChatRequest
-from backend.services.chatbot_service import chatbot_reply
+from models.chat import ChatRequest
+from services.chatbot_service import chatbot_reply
 
 router = APIRouter()
 

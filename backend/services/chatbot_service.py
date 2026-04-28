@@ -13,14 +13,14 @@ from typing import Dict, List, Optional
 
 from dotenv import load_dotenv
 
-from backend.services.ai_service import optimize_route, predict_delay
-from backend.services.alert_service import get_all_alerts, get_risk_zones, get_ship_risk
-from backend.services.dashboard_service import get_dashboard_summary
-from backend.services.inventory_service import get_inventory, get_low_stock
-from backend.services.ship_service import get_all_live_ships, get_ship
-from backend.services.signal_service import get_all_ship_signals, get_ship_signal
-from backend.services.tracking_service import get_all_shipments, get_shipment
-from backend.utils.chatbot_utils import (
+from services.ai_service import optimize_route, predict_delay
+from services.alert_service import get_all_alerts, get_risk_zones, get_ship_risk
+from services.dashboard_service import get_dashboard_summary
+from services.inventory_service import get_inventory, get_low_stock
+from services.ship_service import get_all_live_ships, get_ship
+from services.signal_service import get_all_ship_signals, get_ship_signal
+from services.tracking_service import get_all_shipments, get_shipment
+from utils.chatbot_utils import (
     SHIPMENT_TO_SHIP,
     build_llm_context,
     detect_intents,

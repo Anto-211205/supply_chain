@@ -9,16 +9,16 @@ from fastapi.middleware.cors import CORSMiddleware
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
 # Import Routers
-from backend.routes.dashboard import router as dashboard_router
-from backend.routes.tracking import router as tracking_router
-from backend.routes.ships import router as ships_router
-from backend.routes.inventory import router as inventory_router
-from backend.routes.alerts import router as alerts_router
-from backend.routes.ai import router as ai_router
-from backend.routes.chatbot import router as chatbot_router
-from backend.routes.signals import router as signals_router
-from backend.routes.auth import router as auth_router
-from backend.routes.company import router as company_router
+from routes.dashboard import router as dashboard_router
+from routes.tracking import router as tracking_router
+from routes.ships import router as ships_router
+from routes.inventory import router as inventory_router
+from routes.alerts import router as alerts_router
+from routes.ai import router as ai_router
+from routes.chatbot import router as chatbot_router
+from routes.signals import router as signals_router
+from routes.auth import router as auth_router
+from routes.company import router as company_router
 
 
 app = FastAPI(
@@ -74,3 +74,6 @@ app.include_router(chatbot_router, prefix="/api/v1", tags=["Chatbot"])
 app.include_router(signals_router, prefix="/api/v1", tags=["Signals"])
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(company_router, prefix="/api/v1", tags=["Company"])
+from routes.ai_routes import router as ai_router
+
+app.include_router(ai_router, prefix="/ai")
