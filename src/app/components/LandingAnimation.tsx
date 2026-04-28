@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence, useAnimation } from "motion/react";
+import { motion, useAnimation, type Variants } from "motion/react";
 import { Card } from "./ui/card";
 import { LogIn, UserPlus } from "lucide-react";
 
@@ -75,7 +75,7 @@ export default function LandingAnimation({ onSignIn, onRegister }: LandingAnimat
 
   const waterLevel = windowSize.height * 0.65; // Water surface position
 
-  const shipVariants = {
+  const shipVariants: Variants = {
     idle: {
       x: [-200, windowSize.width ? windowSize.width + 200 : 2000],
       y: [waterLevel, waterLevel - 15, waterLevel, waterLevel - 8, waterLevel],

@@ -245,7 +245,7 @@ export default function NewShipmentDetails({ id, onBack }: NewShipmentDetailsPro
             </CardHeader>
             <CardContent>
               <div className="relative pl-6 space-y-6 border-l-2 border-gray-200 ml-3">
-                {timeline.map((event, idx) => (
+                {timeline.map((event) => (
                   <div key={event.id} className="relative">
                     <span className={`absolute -left-[35px] bg-white p-1 rounded-full ${
                       event.completed ? "text-green-500" : event.current ? "text-indigo-500" : "text-gray-300"

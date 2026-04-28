@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { ArrowRight, TrendingUp, MapPin, AlertTriangle, BarChart3, Ship } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 
 interface LandingPageProps {
   onSignIn: () => void;

@@ -11,7 +11,7 @@
 
 // In production: VITE_API_URL = "https://supply-chain-api.onrender.com"
 // In local dev:  VITE_API_URL = "" (proxy in vite.config.ts takes over)
-const API_BASE_URL = `${import.meta.env.VITE_API_URL || ''}/api/v1`;
+const BASE = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || '';
 
 
 // ============================================================================
@@ -96,9 +96,11 @@ export interface AnalyticsData {
 }
 
 export interface AuthResponse {
-  status: 'success' | 'error';
-  message: string;
+  status?: 'success' | 'error';
+  message?: string;
   token?: string;
+  access_token?: string;
+  token_type?: string;
   user?: any;
 }
 
@@ -131,39 +133,75 @@ async function request<T>(
   endpoint: string,
   body?: any
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-  
-  const options: RequestInit = {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  };
-
-  if (body) {
-    options.body = JSON.stringify(body);
+  const apiMethod = method.toLowerCase() as 'get' | 'post' | 'put' | 'delete';
+  if (apiMethod === 'get' || apiMethod === 'delete') {
+    return apiClient[apiMethod](endpoint) as Promise<T>;
   }
-
-  try {
-    const response = await fetch(url, options);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new APIError(
-        response.status,
-        errorData,
-        errorData.detail || errorData.message || `API Error: ${response.status}`
-      );
-    }
-
-    return await response.json();
-  } catch (error) {
-    if (error instanceof APIError) {
-      throw error;
-    }
-    throw new Error(`Failed to fetch ${endpoint}: ${error}`);
-  }
+  return apiClient[apiMethod](endpoint, body) as Promise<T>;
 }
+
+const getAuthHeaders = (): Record<string, string> => {
+  const token = localStorage.getItem('auth_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
+const handleResponse = async (res: Response) => {
+  if (res.status === 401) {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+    window.location.href = '/signin';
+    throw new Error('Session expired');
+  }
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(
+      data.detail ||
+        data.message ||
+        `Request failed: ${res.status}`
+    );
+  }
+  return data;
+};
+
+export const apiClient = {
+  get: (path: string) =>
+    fetch(`${BASE}/api/v1${path}`, {
+      headers: getAuthHeaders(),
+    }).then(handleResponse),
+
+  post: (path: string, body?: unknown) =>
+    fetch(`${BASE}/api/v1${path}`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: body ? JSON.stringify(body) : undefined,
+    }).then(handleResponse),
+
+  put: (path: string, body?: unknown) =>
+    fetch(`${BASE}/api/v1${path}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: body ? JSON.stringify(body) : undefined,
+    }).then(handleResponse),
+
+  delete: (path: string) =>
+    fetch(`${BASE}/api/v1${path}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    }).then(handleResponse),
+
+  healthCheck: async (): Promise<boolean> => {
+    try {
+      await fetch(`${BASE}/api/v1/health`);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+};
 
 // ============================================================================
 // DASHBOARD API
@@ -254,7 +292,23 @@ export const authAPI = {
   login: (email: string, password: string) =>
     request<AuthResponse>('POST', '/auth/login', { email, password }),
   register: (userData: any) =>
-    request<AuthResponse>('POST', '/auth/register', userData),
+    request<AuthResponse>('POST', '/auth/register', {
+      email: userData.email,
+      password: userData.password,
+      first_name: userData.firstName,
+      last_name: userData.lastName,
+      phone: userData.phone,
+      company_name: userData.company,
+      role: userData.role,
+      country: userData.country,
+    }),
+  forgotPassword: (email: string) =>
+    request<{ message: string; debug_token?: string | null }>('POST', '/auth/forgot-password', { email }),
+  resetPassword: (token: string, new_password: string) =>
+    request<{ message: string }>('POST', '/auth/reset-password', { token, new_password }),
+  verifyResetToken: (token: string) =>
+    request<{ valid: boolean; email: string }>('GET', `/auth/verify-reset-token/${token}`),
+  me: () => request<{ id: string; email: string }>('GET', '/auth/me'),
 };
 
 // ============================================================================
@@ -271,11 +325,7 @@ export const profileAPI = {
 // ============================================================================
 
 export async function checkAPIConnectivity(): Promise<boolean> {
-  try {
-    await dashboardAPI.getSummary();
-    return true;
-  } catch (error) {
-    console.error('API connectivity check failed:', error);
-    return false;
-  }
+  return apiClient.healthCheck();
 }
+
+export default apiClient;

@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Textarea } from "./ui/textarea";
 import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { ArrowLeft, CalendarIcon, CheckCircle2, Package, Loader2 } from "lucide-react";
+import { ArrowLeft, CalendarIcon, CheckCircle2, Package } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -72,7 +72,7 @@ export default function NewShipmentForm({ onBack, onSuccess }: NewShipmentFormPr
     setIsSubmitting(true);
     
     try {
-      const response = await shipmentAPI.create(formData);
+      const response = await shipmentAPI.create(formData) as { shipment_id?: string };
       setIsSuccess(true);
       toast.success("Shipment created successfully!", {
         description: "AI route optimization has started."

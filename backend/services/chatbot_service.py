@@ -677,7 +677,11 @@ def _fallback_llm(message: str) -> Dict:
             return _ok(content.strip())
         return _err("The AI model did not return a response. Please try again.")
     except Exception as exc:
-        return _err(f"AI processing encountered an issue: {str(exc)}")
+        return _ok(
+            "I can assist with delayed shipments, low stock alerts, ship risk assessment, "
+            "route optimisation, tracking, signals, and operational summaries. "
+            f"I could not complete the AI fallback right now: {str(exc)}"
+        )
 
 
 # ============================================================================

@@ -47,9 +47,13 @@ export default function RegisterPage({ onRegister, onBackToLanding, onGoToSignIn
 
     try {
       const response = await authAPI.register(formData);
-      if (response.status === "success") {
-        if (response.token) {
-          localStorage.setItem("auth_token", response.token);
+      if (response.access_token || response.status === "success") {
+        const token = response.access_token || response.token;
+        if (token) {
+          localStorage.setItem("auth_token", token);
+        }
+        if (response.user) {
+          localStorage.setItem("user", JSON.stringify(response.user));
         }
         onRegister();
       } else {
@@ -58,6 +62,13 @@ export default function RegisterPage({ onRegister, onBackToLanding, onGoToSignIn
     } catch (err) {
       if (err instanceof APIError) {
         setError(`Registration failed: ${err.message}`);
+      } else if (err instanceof Error) {
+        const message = err.message.toLowerCase();
+        if (message.includes("failed to fetch") || message.includes("fetch")) {
+          setError("Cannot reach server. Check your connection.");
+        } else {
+          setError(err.message || "Registration failed. Please try again.");
+        }
       } else {
         setError("Registration failed. Please try again.");
       }

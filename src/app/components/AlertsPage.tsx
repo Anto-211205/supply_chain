@@ -1,11 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { AlertTriangle, Cloud, TrendingUp, Users, MapPin, X, Search, ChevronDown, ChevronUp, AlertCircle, Loader2 } from "lucide-react";
+import { AlertTriangle, Cloud, TrendingUp, Users, MapPin, Search, ChevronDown, ChevronUp, AlertCircle, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Input } from "./ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { alertAPI, Alert, APIError } from "../../lib/api";
 
 const getSeverityColor = (severity: Alert["severity"]) => {
@@ -39,7 +39,6 @@ const getTypeIcon = (type: Alert["type"]) => {
 export default function AlertsPage() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Alert["severity"] | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -48,14 +47,13 @@ export default function AlertsPage() {
     const fetchAlerts = async () => {
       try {
         setLoading(true);
-        setError(null);
         const data = await alertAPI.getAll();
         setAlerts(data);
       } catch (err) {
         if (err instanceof APIError) {
-          setError(`Failed to load alerts: ${err.message}`);
+          console.error(`Failed to load alerts: ${err.message}`);
         } else {
-          setError('Failed to load alerts');
+          console.error('Failed to load alerts');
         }
         console.error('Alert error:', err);
       } finally {

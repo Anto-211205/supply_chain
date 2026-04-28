@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import LandingAnimation from "./components/LandingAnimation";
 import SignInPage from "./components/SignInPage";
 import RegisterPage from "./components/RegisterPage";
+import ForgotPasswordPage from "./components/ForgotPasswordPage";
+import ResetPasswordPage from "./components/ResetPasswordPage";
 import Dashboard from "./components/Dashboard";
 import RouteOptimization from "./components/RouteOptimization";
 import ShipmentTracking from "./components/ShipmentTracking";
@@ -16,22 +18,66 @@ import FloatingChatbot from "./components/FloatingChatbot";
 import { Button } from "./components/ui/button";
 import { BarChart3, LayoutDashboard, Map, Package, AlertTriangle, Plus, Menu, X, Bot, TrendingUp, Plug, FileText } from "lucide-react";
 
-type Page = "landing" | "signin" | "register" | "dashboard" | "routes" | "tracking" | "alerts" | "new-shipment" | "forms" | "ai-assistant" | "analytics" | "integrations";
+type Page = "landing" | "signin" | "register" | "forgot-password" | "reset-password" | "dashboard" | "routes" | "tracking" | "alerts" | "new-shipment" | "forms" | "ai-assistant" | "analytics" | "integrations";
+
+const pageFromPath = (path: string): Page => {
+  if (path === "/signin") return "signin";
+  if (path === "/register") return "register";
+  if (path === "/forgot-password") return "forgot-password";
+  if (path === "/reset-password") return "reset-password";
+  if (path === "/dashboard") return "dashboard";
+  return "landing";
+};
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<Page>("landing");
+  const [currentPage, setCurrentPage] = useState<Page>(() => pageFromPath(window.location.pathname));
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [signInMessage, setSignInMessage] = useState("");
+
+  useEffect(() => {
+    const handlePopState = () => setCurrentPage(pageFromPath(window.location.pathname));
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const navigateTo = (page: Page, path: string, message = "") => {
+    setSignInMessage(message);
+    setCurrentPage(page);
+    window.history.pushState({}, "", path);
+  };
 
   if (currentPage === "landing") {
-    return <LandingAnimation onSignIn={() => setCurrentPage("signin")} onRegister={() => setCurrentPage("register")} />;
+    return <LandingAnimation onSignIn={() => navigateTo("signin", "/signin")} onRegister={() => navigateTo("register", "/register")} />;
   }
 
   if (currentPage === "signin") {
-    return <SignInPage onSignIn={() => setCurrentPage("dashboard")} onBackToLanding={() => setCurrentPage("landing")} onGoToRegister={() => setCurrentPage("register")} />;
+    return (
+      <SignInPage
+        onSignIn={() => navigateTo("dashboard", "/dashboard")}
+        onBackToLanding={() => navigateTo("landing", "/")}
+        onGoToRegister={() => navigateTo("register", "/register")}
+        onForgotPassword={() => navigateTo("forgot-password", "/forgot-password")}
+        successMessage={signInMessage}
+      />
+    );
   }
 
   if (currentPage === "register") {
-    return <RegisterPage onRegister={() => setCurrentPage("dashboard")} onBackToLanding={() => setCurrentPage("landing")} onGoToSignIn={() => setCurrentPage("signin")} />;
+    return <RegisterPage onRegister={() => navigateTo("dashboard", "/dashboard")} onBackToLanding={() => navigateTo("landing", "/")} onGoToSignIn={() => navigateTo("signin", "/signin")} />;
+  }
+
+  if (currentPage === "forgot-password") {
+    return <ForgotPasswordPage onBackToLanding={() => navigateTo("landing", "/")} onBackToSignIn={() => navigateTo("signin", "/signin")} />;
+  }
+
+  if (currentPage === "reset-password") {
+    return (
+      <ResetPasswordPage
+        onBackToLanding={() => navigateTo("landing", "/")}
+        onBackToSignIn={(message) => navigateTo("signin", "/signin", message)}
+        onForgotPassword={() => navigateTo("forgot-password", "/forgot-password")}
+      />
+    );
   }
 
   const navigation = [
@@ -87,7 +133,11 @@ export default function App() {
           <Button
             variant="outline"
             className="w-full bg-transparent text-white border-white hover:bg-white hover:text-indigo-900 transition-colors"
-            onClick={() => setCurrentPage("landing")}
+            onClick={() => {
+              localStorage.removeItem("auth_token");
+              localStorage.removeItem("user");
+              navigateTo("landing", "/");
+            }}
           >
             Sign Out
           </Button>

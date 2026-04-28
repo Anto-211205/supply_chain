@@ -29,15 +29,19 @@ app = FastAPI(
 
 # CORS — read allowed origins from env var (comma-separated list).
 # Falls back to localhost:5173 for local development.
-_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173")
-origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+raw_origins = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://localhost:3000",
+)
+allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 
@@ -50,6 +54,15 @@ def root():
     }
 
 
+@app.get("/api/v1/health")
+async def health_check():
+    return {
+        "status": "ok",
+        "service": "supply-chain-api",
+        "version": "1.0.0",
+    }
+
+
 # API Routers
 app.include_router(dashboard_router, prefix="/api/v1", tags=["Dashboard"])
 app.include_router(tracking_router, prefix="/api/v1", tags=["Tracking"])
@@ -59,5 +72,5 @@ app.include_router(alerts_router, prefix="/api/v1", tags=["Alerts"])
 app.include_router(ai_router, prefix="/api/v1", tags=["AI"])
 app.include_router(chatbot_router, prefix="/api/v1", tags=["Chatbot"])
 app.include_router(signals_router, prefix="/api/v1", tags=["Signals"])
-app.include_router(auth_router, prefix="/api/v1", tags=["Auth"])
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(company_router, prefix="/api/v1", tags=["Company"])

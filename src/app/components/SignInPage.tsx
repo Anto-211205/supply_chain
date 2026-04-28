@@ -5,15 +5,22 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { BarChart3, ArrowLeft, Mail, Lock, Loader2 } from "lucide-react";
-import { authAPI, APIError } from "../../lib/api";
 
 interface SignInPageProps {
   onSignIn: () => void;
   onBackToLanding: () => void;
   onGoToRegister: () => void;
+  onForgotPassword: () => void;
+  successMessage?: string;
 }
 
-export default function SignInPage({ onSignIn, onBackToLanding, onGoToRegister }: SignInPageProps) {
+export default function SignInPage({
+  onSignIn,
+  onBackToLanding,
+  onGoToRegister,
+  onForgotPassword,
+  successMessage = "",
+}: SignInPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,19 +37,31 @@ export default function SignInPage({ onSignIn, onBackToLanding, onGoToRegister }
     setError(null);
 
     try {
-      const response = await authAPI.login(email, password);
-      if (response.status === "success") {
-        // Store token if returned
-        if (response.token) {
-          localStorage.setItem("auth_token", response.token);
-        }
-        onSignIn();
-      } else {
-        setError(response.message || "Login failed");
+      const BASE = import.meta.env.VITE_API_URL?.replace(/\/$/, "") || "";
+      const res = await fetch(`${BASE}/api/v1/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.detail || data.message || "Login failed");
       }
+
+      localStorage.setItem("auth_token", data.access_token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      onSignIn();
     } catch (err) {
-      if (err instanceof APIError) {
-        setError(`Login failed: ${err.message}`);
+      if (err instanceof Error && err.message === "Failed to fetch") {
+        setError("Cannot connect to server. Please try again later.");
+      } else if (err instanceof Error) {
+        setError(err.message || "Login failed");
       } else {
         setError("Login failed. Please try again.");
       }
@@ -89,6 +108,11 @@ export default function SignInPage({ onSignIn, onBackToLanding, onGoToRegister }
                 <p className="text-sm text-red-800">{error}</p>
               </div>
             )}
+            {successMessage && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-green-800">{successMessage}</p>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
@@ -129,7 +153,7 @@ export default function SignInPage({ onSignIn, onBackToLanding, onGoToRegister }
                   <input type="checkbox" className="rounded" disabled={loading} />
                   Remember me
                 </label>
-                <Button variant="link" size="sm" className="p-0">
+                <Button variant="link" size="sm" className="p-0" type="button" onClick={onForgotPassword}>
                   Forgot password?
                 </Button>
               </div>

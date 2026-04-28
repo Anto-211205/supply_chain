@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Badge } from "./ui/badge";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { Search, MapPin, Package, Clock, AlertCircle, Loader2 } from "lucide-react";
+import { Search, MapPin, Clock, AlertCircle, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { shipmentAPI, Shipment, APIError } from "../../lib/api";
 
