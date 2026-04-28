@@ -8,6 +8,8 @@ backend/.env
 *.env
 .env.local
 .env.*.local
+.env.production
+.env.*.production
 
 # Frontend build output
 dist/
